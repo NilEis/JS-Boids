@@ -1,4 +1,4 @@
-import game from "./game.js";
+import game from "./game/game";
 
 document.body.innerHTML = "";
 
