@@ -5,7 +5,6 @@ var game_count = 0;
 var games: Set<game> = new Set();
 export default class game {
     canvas: HTMLCanvasElement;
-    bounds: number[];
     dimension: { width: number, height: number };
     running: boolean;
     objects: Array<entity>;
@@ -14,6 +13,8 @@ export default class game {
     private startingTime: number;
     private lastTime: number;
     private totalElapsedTime: number;
+    private n_id: number;
+    private steps: number;
 
     /**
      * @param {Object} options? Optional options for the game
@@ -24,8 +25,9 @@ export default class game {
      * @param {number} options.dimension.height?=400 The height of the canvas 
      * @param {string} options.color?="gray" The background color
      */
-    constructor(options: { canvas?: HTMLCanvasElement, bounds?: number[], dimension?: { width?: number, height?: number }, color?: string } = { canvas: undefined, bounds: undefined, dimension: { width: undefined, height: undefined }, color: undefined }) {
+    constructor(options: { canvas?: HTMLCanvasElement, dimension?: { width?: number, height?: number }, color?: string, steps?: number } = { canvas: undefined, dimension: { width: undefined, height: undefined }, color: undefined }) {
         game_count++;
+        this.n_id = 0;
         this.canvas = options.canvas || (function () {
             const tmp = document.createElement("canvas");
             document.body.append(tmp);
@@ -34,8 +36,6 @@ export default class game {
 
         this.canvas.setAttribute("id", "game_canvas_" + game_count);
         this.ctx = this.canvas.getContext("2d") || new CanvasRenderingContext2D();
-
-        this.bounds = options.bounds || [0, 0, 1, 1];
         this.dimension = {
             width: 0,
             height: 0
@@ -45,6 +45,7 @@ export default class game {
         this.dimension.height = options.dimension.height || 400;
         this.size = this.dimension;
         this.color_a = options.color || "gray";
+        this.steps = options.steps || 1;
         this.startingTime = 0;
         this.lastTime = 0;
         this.totalElapsedTime = 0;
@@ -54,7 +55,9 @@ export default class game {
     }
 
     start() {
-        this.objects.push(new entity(this, this.ctx));
+        for (let i = 0; i < 150; i++) {
+            this.objects.push(new entity(this, this.ctx));
+        }
         this.startingTime = performance.now();
         this.lastTime = performance.now();
         this.totalElapsedTime = 0;
@@ -62,7 +65,6 @@ export default class game {
         if (!games.has(this)) {
             games.add(this);
         }
-        console.log(this);
     }
 
     draw() {
@@ -75,7 +77,9 @@ export default class game {
 
     update(time: number) {
         for (let i = 0; i < this.objects.length; i++) {
-            this.objects[i].update(time);
+            for (let s = 0; s < this.steps; s++) {
+                this.objects[i].update(time);
+            }
         }
         return;
     }
@@ -105,6 +109,10 @@ export default class game {
      */
     set color(color: string) {
         this.color_a = color;
+    }
+
+    get next_id(): number {
+        return this.n_id++;
     }
 
 }
