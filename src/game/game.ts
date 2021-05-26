@@ -1,4 +1,7 @@
+import { math } from "../math/math";
 import { entity } from "./boid";
+import { font } from "./font";
+import { spatial_hash_grid } from "./spatial-hash-grid";
 
 
 var game_count = 0;
@@ -8,6 +11,8 @@ export default class game {
     dimension: { width: number, height: number };
     running: boolean;
     objects: Array<entity>;
+    grid: spatial_hash_grid;
+    mouse: { pressed: boolean, x: number, y: number };
     private ctx: CanvasRenderingContext2D;
     private color_a: string;
     private startingTime: number;
@@ -35,6 +40,7 @@ export default class game {
         })();
 
         this.canvas.setAttribute("id", "game_canvas_" + game_count);
+        this.canvas.style.margin = "0px;";
         this.ctx = this.canvas.getContext("2d") || new CanvasRenderingContext2D();
         this.dimension = {
             width: 0,
@@ -51,11 +57,17 @@ export default class game {
         this.totalElapsedTime = 0;
         this.running = false;
         this.objects = new Array<entity>();
+        this.grid = new spatial_hash_grid(this.dimension, { width: 25, height: 25 });
+        this.mouse = { pressed: false, x: 0, y: 0 };
+        this.canvas.onmousedown = (e: MouseEvent) => { this.mouse.pressed = true; this.mouse.x = e.pageX; this.mouse.y = e.pageY };
+        this.canvas.onmouseup = (e: MouseEvent) => { this.mouse.pressed = false; this.mouse.x = e.pageX; this.mouse.y = e.pageY };
+        this.canvas.onmousemove = (e: MouseEvent) => { this.mouse.x = e.pageX; this.mouse.y = e.pageY };
+        document.body.onkeypress = (e: KeyboardEvent) => { if (e.key == "a") { this.objects.push(new entity(this, this.ctx)); } else if (e.key == "r") { this.objects.pop(); } else if (e.key == "+") { this.steps++; } else if (e.key == "-") { this.steps--; } }
         this.draw();
     }
 
     start() {
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < 250; i++) {
             this.objects.push(new entity(this, this.ctx));
         }
         this.startingTime = performance.now();
@@ -73,9 +85,13 @@ export default class game {
         for (let i = 0; i < this.objects.length; i++) {
             this.objects[i].draw();
         }
+
+        this.fillText(15, 15, "Boids (a,r): " + this.objects.length, 15);
+        this.fillText(15, 35, "Speed (+,-): " + this.steps + "x", 15);
     }
 
     update(time: number) {
+        this.steps = math.clamp(0,Infinity,this.steps);
         for (let i = 0; i < this.objects.length; i++) {
             for (let s = 0; s < this.steps; s++) {
                 this.objects[i].update(time);
@@ -113,6 +129,27 @@ export default class game {
 
     get next_id(): number {
         return this.n_id++;
+    }
+
+    fillText(x_c: number, y_c: number, string: string, size: number, color: string = "white") {
+        const tile_width = size / font.width;
+        const tile_height = size / font.height;
+        var offset = 0;
+        for (let i = 0; i < string.length; i++) {
+            offset += (font[string.charAt(i - 1).toUpperCase()] != undefined && font[string.charAt(i - 1).toUpperCase()].offset != undefined) ? font[string.charAt(i - 1).toUpperCase()].offset : 0;
+            const ch = string.charAt(i).toUpperCase();
+            for (let y = 0; y < font.height; y++) {
+                for (let x = 0; x < font.width; x++) {
+                    const index = y * font.width + x;
+                    const x_s = offset * tile_width + x_c + (i * tile_width * font.width) + x * tile_width;
+                    const y_s = y_c + y * tile_height;
+                    if (font[ch][index] == 1) {
+                        this.ctx.fillStyle = "white";
+                        this.ctx.fillRect(x_s, y_s, tile_width + 1, tile_height + 1);
+                    }
+                }
+            }
+        }
     }
 
 }

@@ -10,10 +10,3 @@ const g = new game({
 });
 
 g.start();
-
-document.onresize = function (e) {
-    g.size = {
-        width: window.innerWidth,
-        height: window.innerHeight
-    };
-}
